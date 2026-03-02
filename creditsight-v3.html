@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CreditSight — Internal Risk Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0c0f;
+  --surface: #111318;
+  --surface-2: #181c23;
+  --surface-3: #1e2330;
+  --border: rgba(255,255,255,0.07);
+  --border-2: rgba(255,255,255,0.12);
+  --text: #e8eaf0;
+  --text-2: #8892a4;
+  --text-3: #4d566a;
+  --accent: #3b82f6;
+  --accent-dim: rgba(59,130,246,0.15);
+  --safe: #22c55e;
+  --safe-dim: rgba(34,197,94,0.12);
+  --warn: #f59e0b;
+  --warn-dim: rgba(245,158,11,0.12);
+  --danger: #ef4444;
+  --danger-dim: rgba(239,68,68,0.12);
+  --gold: #f0c040;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'IBM Plex Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Subtle grid */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: 56px;
+  background: rgba(10,12,15,0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px;
+}
+
+.logo {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700; font-size: 16px; letter-spacing: -0.3px;
+  display: flex; align-items: center; gap: 10px;
+}
+
+.logo-icon {
+  width: 26px; height: 26px;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+}
+
+.header-nav {
+  display: flex; gap: 2px;
+}
+
+.nav-btn {
+  background: transparent; border: none;
+  padding: 7px 18px; border-radius: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-2); cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover { color: var(--text); background: var(--surface-2); }
+.nav-btn.active { color: var(--text); background: var(--surface-3); }
+
+.header-right {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 11px; color: var(--text-3); letter-spacing: 0.05em;
+}
+
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--safe);
+  box-shadow: 0 0 6px var(--safe);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+/* ── PAGE SYSTEM ── */
+.page {
+  position: absolute; top: 56px; left: 0; right: 0;
+  min-height: calc(100vh - 56px);
+  padding: 48px 40px;
+  opacity: 0;
+  transform: translateY(18px);
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  z-index: 1;
+}
+
+.page.active {
+  opacity: 1; transform: translateY(0);
+  pointer-events: all;
+  position: relative;
+}
+
+/* ── PAGE 1: ASSESSMENT ── */
+.page-header {
+  margin-bottom: 40px;
+}
+
+.page-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(36px, 4vw, 52px);
+  line-height: 1.05; letter-spacing: -0.5px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.page-title em { font-style: italic; color: var(--accent); }
+
+.page-subtitle {
+  font-size: 12px; color: var(--text-2); letter-spacing: 0.04em; line-height: 1.6;
+}
+
+/* 3-column form grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px 22px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.card:hover { border-color: var(--border-2); box-shadow: 0 4px 32px rgba(0,0,0,0.3); }
+
+.card-stripe {
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+
+.card.borrower .card-stripe { background: linear-gradient(90deg, #3b82f6, #6366f1); }
+.card.loan .card-stripe { background: linear-gradient(90deg, #f59e0b, #f97316); }
+.card.credit .card-stripe { background: linear-gradient(90deg, #22c55e, #10b981); }
+
+.card-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 22px;
+}
+
+.card-icon {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+  flex-shrink: 0;
+}
+
+.borrower .card-icon { background: rgba(99,102,241,0.15); }
+.loan .card-icon { background: rgba(249,115,22,0.15); }
+.credit .card-icon { background: rgba(34,197,94,0.15); }
+
+.card-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+
+label {
+  display: block;
+  font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-3);
+  margin-bottom: 6px; font-weight: 500;
+}
+
+input[type="number"],
+input[type="text"],
+select {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  appearance: none;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: rgba(59,130,246,0.5);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234d566a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+select option { background: var(--surface-2); }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Sliders */
+.slider-wrap { display: flex; flex-direction: column; gap: 5px; }
+.slider-top { display: flex; justify-content: space-between; align-items: center; }
+.slider-val { font-size: 13px; font-weight: 500; color: var(--text); }
+
+input[type="range"] {
+  width: 100%; height: 3px; border-radius: 2px;
+  background: var(--surface-3); accent-color: var(--accent);
+  cursor: pointer; border: none; padding: 0;
+  box-shadow: none !important;
+}
+
+input[type="range"]:focus { box-shadow: none !important; border: none; }
+
+.slider-labels {
+  display: flex; justify-content: space-between;
+  font-size: 9px; color: var(--text-3); letter-spacing: 0.05em;
+}
+
+/* CTA */
+.cta-row {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 32px;
+}
+
+.btn-primary {
+  background: var(--accent); color: #fff; border: none;
+  border-radius: 10px; padding: 14px 36px;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 13px; font-weight: 600; letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  position: relative; overflow: hidden;
+}
+
+.btn-primary::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(59,130,246,0.35);
+  background: #4f93ff;
+}
+
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 24px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--text-2); cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-secondary:hover { color: var(--text); border-color: var(--border-2); }
+
+/* ── RESULTS ── */
+.results-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 36px;
+  display: none; opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.results-panel.show { opacity: 1; transform: translateY(0); }
+
+.results-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; flex-wrap: wrap;
+  gap: 24px; margin-bottom: 36px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-left {}
+
+.risk-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 16px; border-radius: 100px;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
+.risk-LOW { background: var(--safe-dim); color: var(--safe); border: 1px solid rgba(34,197,94,0.25); }
+.risk-MEDIUM { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(245,158,11,0.25); }
+.risk-HIGH { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(239,68,68,0.25); }
+
+.decision-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 30px; color: var(--text); line-height: 1.1; margin-bottom: 6px;
+}
+
+.decision-desc { font-size: 11px; color: var(--text-2); line-height: 1.7; max-width: 400px; }
+
+/* PD meter */
+.pd-display {
+  text-align: right; flex-shrink: 0;
+}
+
+.pd-num {
+  font-family: 'Instrument Serif', serif;
+  font-size: 56px; line-height: 1; color: var(--text);
+  display: block;
+}
+
+.pd-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+
+/* Threshold pills */
+.threshold-row { display: flex; gap: 8px; margin-top: 12px; }
+
+.t-pill {
+  flex: 1; padding: 10px 14px; border-radius: 8px;
+  text-align: center; border: 1px solid var(--border);
+  background: var(--surface-2); transition: all 0.2s;
+}
+
+.t-pill.active-low { border-color: rgba(34,197,94,0.4); background: var(--safe-dim); }
+.t-pill.active-med { border-color: rgba(245,158,11,0.4); background: var(--warn-dim); }
+.t-pill.active-high { border-color: rgba(239,68,68,0.4); background: var(--danger-dim); }
+
+.t-pill-range { font-size: 12px; font-weight: 500; color: var(--text); display: block; }
+.t-pill-name { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin-top: 2px; }
+
+/* Charts grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.chart-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 22px;
+}
+
+.chart-card.wide { grid-column: span 2; }
+
+.chart-label {
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-3); margin-bottom: 18px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.chart-label::before {
+  content: ''; display: block;
+  width: 3px; height: 12px; border-radius: 2px;
+  background: var(--accent);
+}
+
+/* Radar chart */
+#radarCanvas { display: block; margin: 0 auto; }
+
+/* Credit scale */
+.credit-scale-wrap { padding: 0 4px; }
+
+.scale-bar {
+  position: relative; height: 12px; border-radius: 6px;
+  background: linear-gradient(90deg,
+    #ef4444 0%, #f59e0b 25%, #eab308 45%, #22c55e 65%, #10b981 100%);
+  margin-bottom: 10px; overflow: visible;
+}
+
+.scale-needle {
+  position: absolute; top: -6px;
+  width: 3px; height: 24px;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.6);
+  transform: translateX(-50%);
+  transition: left 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+
+.scale-labels {
+  display: flex; justify-content: space-between;
+  font-size: 9px; color: var(--text-3); margin-bottom: 8px;
+}
+
+.scale-zones {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+
+.zone-tag {
+  font-size: 9px; padding: 3px 8px; border-radius: 4px;
+  letter-spacing: 0.06em;
+}
+
+.zone-tag.poor { background: rgba(239,68,68,0.15); color: #ef4444; }
+.zone-tag.fair { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.zone-tag.good { background: rgba(34,197,94,0.15); color: #22c55e; }
+.zone-tag.exc  { background: rgba(16,185,129,0.15); color: #10b981; }
+
+.fico-value {
+  font-family: 'Instrument Serif', serif;
+  font-size: 28px; color: var(--text); margin-bottom: 4px;
+}
+
+/* Ratio bars */
+.ratio-row {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 14px;
+}
+
+.ratio-row:last-child { margin-bottom: 0; }
+
+.ratio-label-col { min-width: 90px; }
+.ratio-name { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2); }
+.ratio-val-text { font-size: 13px; font-weight: 500; color: var(--text); margin-top: 2px; }
+
+.ratio-bar-col { flex: 1; }
+
+.ratio-bar-track {
+  height: 8px; background: var(--surface-3);
+  border-radius: 4px; overflow: hidden; position: relative;
+}
+
+.ratio-bar-fill {
+  height: 100%; border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+
+.ratio-threshold {
+  position: absolute; top: -3px;
+  width: 2px; height: 14px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 1px;
+}
+
+.ratio-status { min-width: 56px; text-align: right; }
+.ratio-badge {
+  font-size: 9px; padding: 2px 7px; border-radius: 4px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+
+/* Key factors */
+.factors-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+}
+
+.factor-mini {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 14px;
+}
+
+.factor-name { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
+.factor-bar-track { height: 3px; background: var(--surface-3); border-radius: 2px; margin-bottom: 7px; overflow: hidden; }
+.factor-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+.factor-bottom { display: flex; justify-content: space-between; align-items: center; }
+.factor-val-text { font-size: 12px; font-weight: 500; color: var(--text); }
+.impact-chip {
+  font-size: 9px; padding: 2px 6px; border-radius: 3px;
+}
+.imp-pos { background: rgba(34,197,94,0.1); color: var(--safe); }
+.imp-neg { background: rgba(239,68,68,0.1); color: var(--danger); }
+.imp-neu { background: rgba(77,86,106,0.3); color: var(--text-3); }
+
+/* Loading */
+.loading-overlay {
+  display: none; text-align: center; padding: 52px;
+}
+
+.spinner-ring {
+  width: 36px; height: 36px;
+  border: 2px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 11px; color: var(--text-2); letter-spacing: 0.06em; }
+
+/* ── PAGE 2: PAST APPLICATIONS ── */
+.summary-cards {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  margin-bottom: 28px;
+}
+
+.summary-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 22px 20px;
+  animation: fadeUp 0.4s ease both;
+}
+
+.summary-card:nth-child(1) { animation-delay: 0.05s; }
+.summary-card:nth-child(2) { animation-delay: 0.10s; }
+.summary-card:nth-child(3) { animation-delay: 0.15s; }
+.summary-card:nth-child(4) { animation-delay: 0.20s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.summary-icon { font-size: 18px; margin-bottom: 12px; }
+.summary-val {
+  font-family: 'Instrument Serif', serif;
+  font-size: 34px; line-height: 1; color: var(--text); margin-bottom: 4px;
+}
+
+.summary-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+.summary-delta { font-size: 11px; color: var(--safe); margin-top: 6px; }
+
+/* Filters bar */
+.filters-bar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+
+.filter-input {
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 14px; font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--text);
+  flex: 1; min-width: 200px;
+  transition: border-color 0.15s;
+}
+
+.filter-input::placeholder { color: var(--text-3); }
+.filter-input:focus { outline: none; border-color: rgba(59,130,246,0.4); }
+
+.filter-select {
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 32px 8px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--text);
+  appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234d566a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  transition: border-color 0.15s;
+}
+
+.filter-select:focus { outline: none; border-color: rgba(59,130,246,0.4); }
+.filter-select option { background: var(--surface-2); }
+
+/* Table */
+.table-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+}
+
+.table-scroll { overflow-x: auto; }
+
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: 11px;
+}
+
+thead { background: var(--surface-2); }
+
+th {
+  padding: 14px 16px; text-align: left;
+  font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-3); font-weight: 500;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; user-select: none;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+
+th:hover { color: var(--text-2); }
+th .sort-arrow { margin-left: 5px; opacity: 0.4; }
+th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
+
+td {
+  padding: 13px 16px; border-bottom: 1px solid var(--border);
+  color: var(--text); vertical-align: middle;
+  white-space: nowrap;
+}
+
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface-2); }
+
+.td-id { font-size: 10px; color: var(--text-3); }
+.td-name { font-weight: 500; }
+.td-amount { color: var(--text-2); }
+.td-pd { font-weight: 500; }
+
+.tbl-risk-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 100px; font-size: 9px;
+  letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+}
+
+.tbl-risk-badge.LOW { background: var(--safe-dim); color: var(--safe); }
+.tbl-risk-badge.MEDIUM { background: var(--warn-dim); color: var(--warn); }
+.tbl-risk-badge.HIGH { background: var(--danger-dim); color: var(--danger); }
+
+.tbl-decision {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 500;
+}
+
+.tbl-decision.approve { color: var(--safe); }
+.tbl-decision.review { color: var(--warn); }
+.tbl-decision.reject { color: var(--danger); }
+
+.table-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-top: 1px solid var(--border);
+  font-size: 10px; color: var(--text-3);
+  background: var(--surface-2);
+}
+
+.no-results {
+  text-align: center; padding: 48px;
+  font-size: 12px; color: var(--text-3);
+}
+
+/* ── MISC ── */
+.divider {
+  height: 1px; background: var(--border); margin: 28px 0;
+}
+
+footer {
+  text-align: center; padding: 32px;
+  font-size: 10px; color: var(--text-3); letter-spacing: 0.05em;
+  border-top: 1px solid var(--border);
+  margin-top: 48px;
+}
+
+@media (max-width: 900px) {
+  .page { padding: 32px 20px; }
+  .form-grid { grid-template-columns: 1fr; }
+  header { padding: 0 20px; }
+  .summary-cards { grid-template-columns: 1fr 1fr; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .chart-card.wide { grid-column: span 1; }
+  .factors-row { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">CS</div>
+    CreditSight
+    <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);margin-left:4px;font-weight:400;">Internal</span>
+  </div>
+
+  <nav class="header-nav">
+    <button class="nav-btn active" onclick="showPage('assessment', this)">Risk Assessment</button>
+    <button class="nav-btn" onclick="showPage('history', this)">Past Applications</button>
+  </nav>
+
+  <div class="header-right">
+    <div class="status-dot"></div>
+    <span>System Operational</span>
+    <span style="color:var(--border-2);">|</span>
+    <span id="currentTime"></span>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════
+     PAGE 1: RISK ASSESSMENT
+═══════════════════════════════════════════ -->
+<div class="page active" id="page-assessment">
+
+  <div class="page-header">
+    <h1 class="page-title">Loan Risk<br><em>Assessment</em></h1>
+    <p class="page-subtitle">Enter applicant details to generate a probability of default and decision recommendation.</p>
+  </div>
+
+  <!-- FORM -->
+  <div class="form-grid">
+
+    <!-- Borrower -->
+    <div class="card borrower">
+      <div class="card-stripe"></div>
+      <div class="card-header">
+        <div class="card-icon">👤</div>
+        <span class="card-title">Borrower Information</span>
+      </div>
+
+      <div class="field">
+        <label>Applicant Name</label>
+        <input type="text" id="applicant_name" placeholder="Full name">
+      </div>
+      <div class="field">
+        <label>Annual Income ($)</label>
+        <input type="number" id="annual_income" placeholder="72000" min="0">
+      </div>
+      <div class="field">
+        <label>Employment Length</label>
+        <div class="slider-wrap">
+          <div class="slider-top">
+            <span class="slider-val" id="emp_len_val">5 yrs</span>
+          </div>
+          <input type="range" id="emp_length" min="0" max="10" step="1" value="5"
+            oninput="document.getElementById('emp_len_val').textContent=this.value+(+this.value===10?'+ yrs':' yrs')">
+          <div class="slider-labels"><span>0</span><span>10+ yrs</span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Home Ownership</label>
+        <select id="home_ownership">
+          <option value="RENT">Rent</option>
+          <option value="MORTGAGE" selected>Mortgage</option>
+          <option value="OWN">Own</option>
+          <option value="OTHER">Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Verification Status</label>
+        <select id="verification_status">
+          <option value="Not Verified">Not Verified</option>
+          <option value="Verified" selected>Verified</option>
+          <option value="Source Verified">Source Verified</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Loan -->
+    <div class="card loan">
+      <div class="card-stripe"></div>
+      <div class="card-header">
+        <div class="card-icon">📄</div>
+        <span class="card-title">Loan Details</span>
+      </div>
+
+      <div class="field">
+        <label>Loan Amount ($)</label>
+        <input type="number" id="loan_amount" placeholder="15000" min="500" max="40000">
+      </div>
+      <div class="field">
+        <label>Loan Term</label>
+        <select id="term">
+          <option value="36" selected>36 Months</option>
+          <option value="60">60 Months</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Interest Rate</label>
+        <div class="slider-wrap">
+          <div class="slider-top">
+            <span class="slider-val" id="int_rate_val">12.5%</span>
+          </div>
+          <input type="range" id="int_rate" min="5" max="30" step="0.5" value="12.5"
+            oninput="document.getElementById('int_rate_val').textContent=this.value+'%'">
+          <div class="slider-labels"><span>5%</span><span>30%</span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Monthly Installment ($)</label>
+        <input type="number" id="installment" placeholder="490" min="0">
+      </div>
+      <div class="field">
+        <label>Loan Purpose</label>
+        <select id="loan_purpose">
+          <option value="debt_consolidation" selected>Debt Consolidation</option>
+          <option value="home_improvement">Home Improvement</option>
+          <option value="business">Business</option>
+          <option value="major_purchase">Major Purchase</option>
+          <option value="medical">Medical</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Credit -->
+    <div class="card credit">
+      <div class="card-stripe"></div>
+      <div class="card-header">
+        <div class="card-icon">📊</div>
+        <span class="card-title">Credit Profile</span>
+      </div>
+
+      <div class="field field-row">
+        <div>
+          <label>FICO Low</label>
+          <input type="number" id="fico_low" placeholder="660" min="300" max="850">
+        </div>
+        <div>
+          <label>FICO High</label>
+          <input type="number" id="fico_high" placeholder="664" min="300" max="850">
+        </div>
+      </div>
+      <div class="field">
+        <label>Debt-to-Income Ratio</label>
+        <div class="slider-wrap">
+          <div class="slider-top">
+            <span class="slider-val" id="dti_val">18.0</span>
+          </div>
+          <input type="range" id="dti" min="0" max="40" step="0.5" value="18"
+            oninput="document.getElementById('dti_val').textContent=parseFloat(this.value).toFixed(1)">
+          <div class="slider-labels"><span>0</span><span>40</span></div>
+        </div>
+      </div>
+      <div class="field field-row">
+        <div>
+          <label>Open Accts</label>
+          <input type="number" id="open_acc" placeholder="10" min="0">
+        </div>
+        <div>
+          <label>Total Accts</label>
+          <input type="number" id="total_acc" placeholder="22" min="0">
+        </div>
+      </div>
+      <div class="field field-row">
+        <div>
+          <label>Revol. Util (%)</label>
+          <input type="number" id="revol_util" placeholder="45.2" min="0" max="200" step="0.1">
+        </div>
+        <div>
+          <label>Public Records</label>
+          <input type="number" id="pub_rec" placeholder="0" min="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Inquiries (last 6 mo.)</label>
+        <input type="number" id="inq_6mo" placeholder="1" min="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <button class="btn-primary" onclick="runAnalysis()">Run Assessment →</button>
+    <button class="btn-secondary" onclick="resetForm()">Clear Fields</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-overlay" id="loadingState">
+    <div class="spinner-ring"></div>
+    <p class="loading-text">Evaluating applicant profile...</p>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-panel" id="resultsPanel">
+
+    <!-- Header row -->
+    <div class="results-header">
+      <div class="results-left">
+        <div id="riskPill" class="risk-pill risk-LOW">● LOW RISK</div>
+        <div id="decisionTitle" class="decision-title">Recommend: Approve</div>
+        <p id="decisionDesc" class="decision-desc"></p>
+        <div class="threshold-row" id="thresholdRow">
+          <div class="t-pill" id="tp-low">
+            <span class="t-pill-range">&lt; 30%</span>
+            <span class="t-pill-name">✓ Approve</span>
+          </div>
+          <div class="t-pill" id="tp-med">
+            <span class="t-pill-range">30 – 50%</span>
+            <span class="t-pill-name">⚠ Review</span>
+          </div>
+          <div class="t-pill" id="tp-high">
+            <span class="t-pill-range">&gt; 50%</span>
+            <span class="t-pill-name">✗ Reject</span>
+          </div>
+        </div>
+      </div>
+      <div class="pd-display">
+        <span class="pd-num" id="pdNum">—</span>
+        <span class="pd-label">Prob. of Default</span>
+      </div>
+    </div>
+
+    <!-- Charts grid -->
+    <div class="charts-grid">
+
+      <!-- Radar chart -->
+      <div class="chart-card">
+        <div class="chart-label">Borrower Profile vs Benchmark</div>
+        <canvas id="radarCanvas" width="240" height="220"></canvas>
+      </div>
+
+      <!-- FICO Scale + Ratios -->
+      <div class="chart-card" style="display:flex;flex-direction:column;gap:24px;">
+
+        <div>
+          <div class="chart-label">Credit Score</div>
+          <div class="fico-value" id="ficoDisplay">—</div>
+          <div class="credit-scale-wrap">
+            <div class="scale-bar">
+              <div class="scale-needle" id="ficoNeedle" style="left:50%"></div>
+            </div>
+            <div class="scale-labels">
+              <span>300</span><span>500</span><span>580</span><span>670</span><span>740</span><span>850</span>
+            </div>
+            <div class="scale-zones">
+              <span class="zone-tag poor">Poor &lt;580</span>
+              <span class="zone-tag fair">Fair 580–669</span>
+              <span class="zone-tag good">Good 670–739</span>
+              <span class="zone-tag exc">Excellent 740+</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider" style="margin:0"></div>
+
+        <!-- LTI + DTI bars -->
+        <div>
+          <div class="chart-label">Financial Ratios</div>
+          <div id="ratioDisplay"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Key factors -->
+    <div>
+      <div class="chart-label" style="margin-bottom:14px;">Key Risk Drivers</div>
+      <div class="factors-row" id="factorsRow"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE 2: PAST APPLICATIONS
+═══════════════════════════════════════════ -->
+<div class="page" id="page-history">
+
+  <div class="page-header">
+    <h1 class="page-title">Past<br><em>Applications</em></h1>
+    <p class="page-subtitle">Review, search, and filter all previously assessed loan applications.</p>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary-cards" id="summaryCards"></div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <input class="filter-input" type="text" id="searchInput" placeholder="🔍  Search by applicant name or ID..." oninput="filterTable()">
+    <select class="filter-select" id="riskFilter" onchange="filterTable()">
+      <option value="">All Risk Levels</option>
+      <option value="LOW">Low Risk</option>
+      <option value="MEDIUM">Medium Risk</option>
+      <option value="HIGH">High Risk</option>
+    </select>
+    <select class="filter-select" id="decisionFilter" onchange="filterTable()">
+      <option value="">All Decisions</option>
+      <option value="Approve">Approve</option>
+      <option value="Review">Review</option>
+      <option value="Reject">Reject</option>
+    </select>
+    <select class="filter-select" id="sortField" onchange="filterTable()">
+      <option value="date">Sort: Date</option>
+      <option value="pd">Sort: PD %</option>
+      <option value="amount">Sort: Amount</option>
+      <option value="name">Sort: Name</option>
+    </select>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table id="appTable">
+        <thead>
+          <tr>
+            <th>App ID</th>
+            <th>Applicant</th>
+            <th>Date</th>
+            <th>Loan Amount</th>
+            <th>Int. Rate</th>
+            <th>FICO</th>
+            <th>DTI</th>
+            <th>PD %</th>
+            <th>Risk Level</th>
+            <th>Decision</th>
+          </tr>
+        </thead>
+        <tbody id="appTableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <span id="tableCount">— applications</span>
+      <span>CreditSight Internal · Confidential</span>
+    </div>
+  </div>
+
+</div>
+
+<footer>CreditSight Risk Platform · Internal Use Only · Confidential</footer>
+
+<!-- ══════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════ -->
+<script>
+// ── TIME ──
+function updateTime() {
+  const now = new Date();
+  document.getElementById('currentTime').textContent =
+    now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+setInterval(updateTime, 1000); updateTime();
+
+// ── PAGE NAV ──
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const pg = document.getElementById('page-' + name);
+  pg.classList.add('active');
+  if (name === 'history') renderHistory();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── MODEL ──
+// ── API CONFIG ────────────────────────────────────────────────
+const API_BASE = 'http://localhost:8000';
+
+// ── Get form inputs ───────────────────────────────────────────
+function getInputs() {
+  return {
+    applicant_name      : document.getElementById('applicant_name').value || 'Applicant',
+    annual_income       : parseFloat(document.getElementById('annual_income').value) || 72000,
+    emp_length          : parseInt(document.getElementById('emp_length').value),
+    home_ownership      : document.getElementById('home_ownership').value,
+    verification_status : document.getElementById('verification_status').value,
+    loan_amount         : parseFloat(document.getElementById('loan_amount').value) || 15000,
+    term                : parseInt(document.getElementById('term').value),
+    interest_rate       : parseFloat(document.getElementById('int_rate').value),
+    installment         : parseFloat(document.getElementById('installment').value) || 450,
+    dti                 : parseFloat(document.getElementById('dti').value),
+    fico_low            : parseInt(document.getElementById('fico_low').value) || 680,
+    fico_high           : parseInt(document.getElementById('fico_high').value) || 684,
+    open_acc            : parseInt(document.getElementById('open_acc').value) || 10,
+    total_acc           : parseInt(document.getElementById('total_acc').value) || 22,
+    revol_util          : parseFloat(document.getElementById('revol_util').value) || 45,
+    pub_rec             : parseInt(document.getElementById('pub_rec').value) || 0,
+    inq_last_6mths      : parseInt(document.getElementById('inq_6mo').value) || 1,
+    grade               : parseInt(document.getElementById('grade') ? document.getElementById('grade').value : 3) || 3,
+  };
+}
+
+// ── Main: Call real API ───────────────────────────────────────
+async function runAnalysis() {
+  const loading = document.getElementById('loadingState');
+  const panel   = document.getElementById('resultsPanel');
+  panel.style.display = 'none';
+  panel.classList.remove('show');
+  loading.style.display = 'block';
+
+  const d = getInputs();
+
+  try {
+    const response = await fetch(`${API_BASE}/predict`, {
+      method  : 'POST',
+      headers : { 'Content-Type': 'application/json' },
+      body    : JSON.stringify(d),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(JSON.stringify(err.detail || 'API error'));
+    }
+
+    const result = await response.json();
+    loading.style.display = 'none';
+
+    // Pass real API result to render functions
+    renderResults(result.probability, d, result);
+
+  } catch (err) {
+    loading.style.display = 'none';
+    alert('Backend error: ' + err.message + '\n\nMake sure the server is running:\npython -m uvicorn main:app --reload');
+    console.error(err);
+  }
+}
+
+function renderResults(prob, d, apiResult) {
+  const pct = (prob * 100).toFixed(1);
+  const panel = document.getElementById('resultsPanel');
+
+  // Use real tier + decision from API
+  const level    = apiResult ? apiResult.risk_tier : (prob < 0.30 ? 'LOW' : prob < 0.55 ? 'MEDIUM' : 'HIGH');
+  const decLabel = apiResult ? apiResult.decision  : (level === 'LOW' ? 'Approve' : level === 'MEDIUM' ? 'Review' : 'Reject');
+
+  let decision, desc, tpId;
+  if (level === 'LOW') {
+    decision = 'Recommend: Approve'; tpId = 'tp-low';
+    desc = 'This applicant presents a low predicted default risk. Standard loan terms may apply. Regular monitoring of income and utilization changes is advised.';
+  } else if (level === 'MEDIUM') {
+    decision = 'Recommend: Manual Review'; tpId = 'tp-med';
+    desc = 'This applicant falls in the moderate risk band. An underwriter should review supporting documentation and verify income sources before final approval.';
+  } else {
+    decision = 'Recommend: Decline'; tpId = 'tp-high';
+    desc = 'Predicted default probability exceeds the threshold. Consider declining or requiring substantial collateral, co-signer, or significantly reduced loan amount.';
+  }
+
+  document.getElementById('riskPill').className = 'risk-pill risk-' + level;
+  document.getElementById('riskPill').textContent = '● ' + level + ' RISK';
+  document.getElementById('decisionTitle').textContent = decision;
+  document.getElementById('decisionDesc').textContent = desc;
+  document.getElementById('pdNum').textContent = pct + '%';
+
+  ['tp-low','tp-med','tp-high'].forEach(id => {
+    document.getElementById(id).className = 't-pill';
+  });
+  const tpColors = {'tp-low':'active-low','tp-med':'active-med','tp-high':'active-high'};
+  document.getElementById(tpId).classList.add(tpColors[tpId]);
+
+  // FICO
+  const ficoAvg = (d.fico_low + d.fico_high) / 2;
+  document.getElementById('ficoDisplay').textContent = ficoAvg.toFixed(0);
+  const ficoPct = ((ficoAvg - 300) / 550) * 100;
+  setTimeout(() => {
+    document.getElementById('ficoNeedle').style.left = ficoPct.toFixed(1) + '%';
+  }, 100);
+
+  // Ratios
+  renderRatios(d);
+
+  // Radar
+  setTimeout(() => drawRadar(d), 150);
+
+  // Factors
+  renderFactors(d, ficoAvg);
+
+  panel.style.display = 'block';
+  requestAnimationFrame(() => {
+    panel.classList.add('show');
+    setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
+  });
+}
+
+// ── RADAR ──
+function drawRadar(d) {
+  const canvas = document.getElementById('radarCanvas');
+  const ctx = canvas.getContext('2d');
+  const cx = canvas.width / 2, cy = canvas.height / 2 + 10;
+  const r = 80;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const axes = ['Income', 'FICO', 'DTI', 'Emp.Len', 'Revol.', 'Int.Rate'];
+  const n = axes.length;
+
+  const ficoAvg = (d.fico_low + d.fico_high) / 2;
+  // Normalize to 0-1 (1=best/safest)
+  const applicant = [
+    Math.min(d.annual_income / 120000, 1),
+    (ficoAvg - 300) / 550,
+    Math.max(0, 1 - d.dti / 40),
+    d.emp_length / 10,
+    Math.max(0, 1 - d.revol_util / 100),
+    Math.max(0, 1 - (d.int_rate - 5) / 25),
+  ];
+  const benchmark = [0.65, 0.72, 0.60, 0.55, 0.65, 0.60];
+
+  function getPoint(i, val) {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+    return { x: cx + r * val * Math.cos(angle), y: cy + r * val * Math.sin(angle) };
+  }
+
+  // Grid rings
+  for (let ring = 1; ring <= 4; ring++) {
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+      const x = cx + (r * ring / 4) * Math.cos(angle);
+      const y = cy + (r * ring / 4) * Math.sin(angle);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  // Spokes
+  for (let i = 0; i < n; i++) {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  // Benchmark
+  ctx.beginPath();
+  benchmark.forEach((v, i) => {
+    const p = getPoint(i, v);
+    i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+  });
+  ctx.closePath();
+  ctx.strokeStyle = 'rgba(59,130,246,0.35)'; ctx.lineWidth = 1.5;
+  ctx.fillStyle = 'rgba(59,130,246,0.06)';
+  ctx.fill(); ctx.stroke();
+
+  // Applicant
+  ctx.beginPath();
+  applicant.forEach((v, i) => {
+    const p = getPoint(i, v);
+    i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+  });
+  ctx.closePath();
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  grad.addColorStop(0, 'rgba(240,192,64,0.25)');
+  grad.addColorStop(1, 'rgba(240,192,64,0.04)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(240,192,64,0.8)'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Dots
+  applicant.forEach((v, i) => {
+    const p = getPoint(i, v);
+    ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#f0c040'; ctx.fill();
+  });
+
+  // Labels
+  ctx.font = '9px IBM Plex Mono';
+  ctx.fillStyle = 'rgba(136,146,164,0.9)'; ctx.textAlign = 'center';
+  axes.forEach((label, i) => {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+    const lx = cx + (r + 18) * Math.cos(angle);
+    const ly = cy + (r + 18) * Math.sin(angle) + 4;
+    ctx.fillText(label, lx, ly);
+  });
+
+  // Legend
+  ctx.font = '9px IBM Plex Mono'; ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(240,192,64,0.8)';
+  ctx.fillRect(10, canvas.height - 28, 12, 2);
+  ctx.fillStyle = 'rgba(136,146,164,0.7)';
+  ctx.fillText('Applicant', 26, canvas.height - 24);
+  ctx.strokeStyle = 'rgba(59,130,246,0.5)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(90, canvas.height - 27); ctx.lineTo(102, canvas.height - 27); ctx.stroke();
+  ctx.fillText('Benchmark', 106, canvas.height - 24);
+}
+
+// ── RATIOS ──
+function renderRatios(d) {
+  const lti = d.loan_amount / d.annual_income;
+  const ltiPct = Math.min((lti / 0.6) * 100, 100);
+  const ltiGood = lti < 0.3;
+  const ltiOk = lti < 0.45;
+
+  const dtiPct = Math.min((d.dti / 40) * 100, 100);
+  const dtiGood = d.dti < 20;
+  const dtiOk = d.dti < 30;
+
+  function ratioColor(good, ok) {
+    return good ? '#22c55e' : ok ? '#f59e0b' : '#ef4444';
+  }
+  function ratioLabel(good, ok) {
+    return good ? 'Healthy' : ok ? 'Moderate' : 'Elevated';
+  }
+  function ratioClass(good, ok) {
+    return good ? 'imp-pos' : ok ? '' : 'imp-neg';
+  }
+
+  document.getElementById('ratioDisplay').innerHTML = `
+    <div class="ratio-row">
+      <div class="ratio-label-col">
+        <div class="ratio-name">Loan-to-Income</div>
+        <div class="ratio-val-text">${(lti*100).toFixed(1)}%</div>
+      </div>
+      <div class="ratio-bar-col">
+        <div class="ratio-bar-track">
+          <div class="ratio-bar-fill" id="ltiBar" style="width:0%;background:${ratioColor(ltiGood,ltiOk)}"></div>
+          <div class="ratio-threshold" style="left:50%"></div>
+        </div>
+      </div>
+      <div class="ratio-status">
+        <span class="ratio-badge ${ratioClass(ltiGood,ltiOk)}" style="background:${ltiGood?'rgba(34,197,94,0.1)':ltiOk?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)'};color:${ratioColor(ltiGood,ltiOk)}">${ratioLabel(ltiGood,ltiOk)}</span>
+      </div>
+    </div>
+    <div class="ratio-row">
+      <div class="ratio-label-col">
+        <div class="ratio-name">Debt-to-Income</div>
+        <div class="ratio-val-text">${d.dti.toFixed(1)}</div>
+      </div>
+      <div class="ratio-bar-col">
+        <div class="ratio-bar-track">
+          <div class="ratio-bar-fill" id="dtiBar" style="width:0%;background:${ratioColor(dtiGood,dtiOk)}"></div>
+          <div class="ratio-threshold" style="left:75%"></div>
+        </div>
+      </div>
+      <div class="ratio-status">
+        <span class="ratio-badge" style="background:${dtiGood?'rgba(34,197,94,0.1)':dtiOk?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)'};color:${ratioColor(dtiGood,dtiOk)}">${ratioLabel(dtiGood,dtiOk)}</span>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => {
+    const lb = document.getElementById('ltiBar');
+    const db = document.getElementById('dtiBar');
+    if (lb) lb.style.width = ltiPct.toFixed(1) + '%';
+    if (db) db.style.width = dtiPct.toFixed(1) + '%';
+  }, 200);
+}
+
+// ── FACTORS ──
+function renderFactors(d, ficoAvg) {
+  const factors = [
+    { name:'Int. Rate', val: d.int_rate+'%', pct: ((d.int_rate-5)/25)*100, color:'#ef4444', good: d.int_rate < 12, bad: d.int_rate > 20 },
+    { name:'FICO Score', val: ficoAvg.toFixed(0), pct: ((ficoAvg-300)/550)*100, color:'#22c55e', good: ficoAvg>=720, bad: ficoAvg<620 },
+    { name:'DTI', val: d.dti.toFixed(1), pct: (d.dti/40)*100, color:'#f59e0b', good: d.dti<15, bad: d.dti>30 },
+    { name:'Revol. Util', val: d.revol_util+'%', pct: Math.min(d.revol_util,100), color:'#6366f1', good: d.revol_util<30, bad: d.revol_util>70 },
+  ];
+
+  document.getElementById('factorsRow').innerHTML = factors.map((f, i) => {
+    const impact = f.good ? 'pos' : f.bad ? 'neg' : 'neu';
+    const label = f.good ? '↓ Risk' : f.bad ? '↑ Risk' : 'Neutral';
+    return `
+      <div class="factor-mini" style="animation:fadeUp 0.4s ease ${i*0.07}s both">
+        <div class="factor-name">${f.name}</div>
+        <div class="factor-bar-track">
+          <div class="factor-bar-fill" id="ff${i}" style="width:0%;background:${f.color};opacity:0.7"></div>
+        </div>
+        <div class="factor-bottom">
+          <span class="factor-val-text">${f.val}</span>
+          <span class="impact-chip imp-${impact}">${label}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  setTimeout(() => {
+    factors.forEach((f, i) => {
+      const el = document.getElementById('ff' + i);
+      if (el) el.style.width = f.pct.toFixed(1) + '%';
+    });
+  }, 300);
+}
+
+function resetForm() {
+  document.querySelectorAll('#page-assessment input, #page-assessment select').forEach(el => {
+    if (el.type === 'range') {
+      if (el.id === 'emp_length') { el.value = 5; document.getElementById('emp_len_val').textContent = '5 yrs'; }
+      if (el.id === 'int_rate') { el.value = 12.5; document.getElementById('int_rate_val').textContent = '12.5%'; }
+      if (el.id === 'dti') { el.value = 18; document.getElementById('dti_val').textContent = '18.0'; }
+    } else if (el.tagName === 'SELECT') {
+      el.selectedIndex = 0;
+    } else {
+      el.value = '';
+    }
+  });
+  const p = document.getElementById('resultsPanel');
+  p.classList.remove('show');
+  setTimeout(() => { p.style.display = 'none'; }, 400);
+}
+
+// ── HISTORY — Real API ────────────────────────────────────────
+let applicationHistory = [];
+
+function saveApplication(d, prob) {
+  // No-op — saving is handled by the backend in runAnalysis()
+  // History is fetched fresh from the DB
+}
+
+async function renderHistory() {
+  try {
+    // Fetch summary cards
+    const sumRes  = await fetch(`${API_BASE}/applications/summary`);
+    const summary = await sumRes.json();
+    updateSummaryCards(summary);
+
+    // Fetch all applications
+    const appRes = await fetch(`${API_BASE}/applications?limit=200`);
+    const apps   = await appRes.json();
+
+    // Map DB records to local format
+    applicationHistory = apps.map(a => ({
+      id          : 'APP-' + String(a.id).padStart(4, '0'),
+      name        : a.applicant_name,
+      date        : a.created_at.split(' ')[0],
+      dateObj     : new Date(a.created_at),
+      loan_amount : a.loan_amount,
+      int_rate    : a.interest_rate,
+      fico        : '—',
+      dti         : '—',
+      pd          : (a.probability * 100).toFixed(1),
+      pdNum       : a.probability,
+      risk        : a.risk_tier,
+      decision    : a.decision,
+    }));
+
+    filterTable();
+
+  } catch (err) {
+    console.error('Failed to load history:', err);
+    document.getElementById('appTableBody').innerHTML =
+      '<tr><td colspan="10"><div class="no-results">Could not load history. Make sure the backend is running.</div></td></tr>';
+  }
+}
+
+function updateSummaryCards(summary) {
+  if (!summary) return;
+  document.getElementById('summaryCards').innerHTML = `
+    <div class="summary-card">
+      <div class="summary-icon">📋</div>
+      <div class="summary-val">${summary.total_applications}</div>
+      <div class="summary-label">Total Applications</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">✅</div>
+      <div class="summary-val">${summary.approval_rate}%</div>
+      <div class="summary-label">Approval Rate</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">⚠️</div>
+      <div class="summary-val" style="color:var(--danger)">${summary.high_risk_pct}%</div>
+      <div class="summary-label">High Risk Applications</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-icon">📊</div>
+      <div class="summary-val">${summary.avg_probability}%</div>
+      <div class="summary-label">Average Prob. of Default</div>
+    </div>
+  `;
+}
+
+function filterTable() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const risk = document.getElementById('riskFilter').value;
+  const dec = document.getElementById('decisionFilter').value;
+  const sortF = document.getElementById('sortField').value;
+
+  let filtered = applicationHistory.filter(a => {
+    const matchSearch = !search || a.name.toLowerCase().includes(search) || a.id.toLowerCase().includes(search);
+    const matchRisk = !risk || a.risk === risk;
+    const matchDec = !dec || a.decision === dec;
+    return matchSearch && matchRisk && matchDec;
+  });
+
+  filtered.sort((a, b) => {
+    if (sortF === 'pd') return b.pdNum - a.pdNum;
+    if (sortF === 'amount') return b.loan_amount - a.loan_amount;
+    if (sortF === 'name') return a.name.localeCompare(b.name);
+    return b.dateObj - a.dateObj;
+  });
+
+  const tbody = document.getElementById('appTableBody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="no-results">No applications match your filters.</div></td></tr>';
+    document.getElementById('tableCount').textContent = '0 applications';
+    return;
+  }
+
+  const decClass = { Approve:'approve', Review:'review', Reject:'reject' };
+  const decIcon = { Approve:'✓', Review:'⚠', Reject:'✗' };
+
+  tbody.innerHTML = filtered.map((a, i) => `
+    <tr style="animation:fadeUp 0.3s ease ${i*0.04}s both">
+      <td class="td-id">${a.id}</td>
+      <td class="td-name">${a.name}</td>
+      <td style="color:var(--text-2)">${a.date}</td>
+      <td class="td-amount">$${a.loan_amount.toLocaleString()}</td>
+      <td>${a.int_rate}%</td>
+      <td>${a.fico}</td>
+      <td>${a.dti}</td>
+      <td class="td-pd" style="color:${a.risk==='HIGH'?'var(--danger)':a.risk==='MEDIUM'?'var(--warn)':'var(--safe)'}">${a.pd}%</td>
+      <td><span class="tbl-risk-badge ${a.risk}">● ${a.risk}</span></td>
+      <td><span class="tbl-decision ${decClass[a.decision]}">${decIcon[a.decision]} ${a.decision}</span></td>
+    </tr>
+  `).join('');
+
+  document.getElementById('tableCount').textContent = `${filtered.length} application${filtered.length !== 1 ? 's' : ''}`;
+}
+</script>
+</body>
+</html>

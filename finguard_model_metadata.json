@@ -1,0 +1,68 @@
+{
+  "model_name": "FinGuard Credit Risk Model v1.0",
+  "algorithm": "XGBoost",
+  "version": "1.0.0",
+  "saved_at": "2026-02-27 23:34:03",
+  "threshold": 0.55,
+  "risk_tiers": {
+    "LOW": {
+      "range": "PD < 0.30",
+      "decision": "Approve"
+    },
+    "MEDIUM": {
+      "range": "0.30 <= PD < 0.60",
+      "decision": "Review"
+    },
+    "HIGH": {
+      "range": "PD >= 0.60",
+      "decision": "Reject"
+    }
+  },
+  "performance": {
+    "auc": 0.7419,
+    "accuracy": 0.7186,
+    "recall_default": 0.5941,
+    "precision_default": 0.3845,
+    "f1_default": 0.4669,
+    "cv_mean_auc": 0.7416,
+    "cv_std_auc": 0.0022
+  },
+  "training_data": {
+    "train_size": 297708,
+    "test_size": 74428,
+    "n_features": 21,
+    "class_ratio": "294953:77183 (Non-Default:Default)",
+    "scale_pos_weight": 3.8215
+  },
+  "feature_names": [
+    "loan_amnt",
+    "term",
+    "int_rate",
+    "installment",
+    "grade",
+    "emp_length",
+    "annual_inc",
+    "dti",
+    "fico_range_low",
+    "fico_range_high",
+    "inq_last_6mths",
+    "open_acc",
+    "pub_rec",
+    "revol_bal",
+    "revol_util",
+    "total_acc",
+    "home_OTHER",
+    "home_OWN",
+    "home_RENT",
+    "verification_status_Source Verified",
+    "verification_status_Verified"
+  ],
+  "hyperparameters": {
+    "n_estimators": 300,
+    "max_depth": 5,
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "scale_pos_weight": 3.8215
+  }
+}

@@ -1,0 +1,23 @@
+[
+  "loan_amnt",
+  "term",
+  "int_rate",
+  "installment",
+  "grade",
+  "emp_length",
+  "annual_inc",
+  "dti",
+  "fico_range_low",
+  "fico_range_high",
+  "inq_last_6mths",
+  "open_acc",
+  "pub_rec",
+  "revol_bal",
+  "revol_util",
+  "total_acc",
+  "home_OTHER",
+  "home_OWN",
+  "home_RENT",
+  "verification_status_Source Verified",
+  "verification_status_Verified"
+]

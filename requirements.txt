@@ -1,0 +1,10 @@
+fastapi==0.134.0
+uvicorn==0.41.0
+sqlalchemy==2.0.47
+pydantic==2.12.5
+pandas==2.3.0
+numpy==2.2.6
+joblib==1.5.1
+python-dotenv==1.1.0
+xgboost
+python-multipart

@@ -1,0 +1,16 @@
+# Database
+finguard.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Large data files
+appl_accepted_20072019Q3_semi_cleaned.csv
+appl_accepted_20072019Q3.csv
+
+# Environment
+.env
+venv/
